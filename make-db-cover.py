@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import sys
 import sourmash
+from sourmash import sourmash_args
 import argparse
 
 
@@ -20,22 +21,27 @@ class MyJaccardSearch(JaccardSearch):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('database')
-    p.add_argument('--scaled', default=10000)
+    p.add_argument('--scaled', default=10000, type=int)
+    p.add_argument('-o', '--output', required=True)
     args = p.parse_args()
 
-    idx = sourmash.load_file_as_index(args.database)
-    for ss in idx.signatures():
-        ss.minhash = ss.minhash.downsample(scaled=args.scaled)
-        search_obj = MyJaccardSearch(ss)
+    seen_hashes = set()
 
-        results = list(idx.find(search_obj, ss))
-        if results:
-            print(ss.name)
-            for n, sr in enumerate(results):
-                print('   ', n, sr.signature.name, sr.score)
-            print('---')
-        else:
-            print('XXX NO RESULTS:', ss.name)
+    idx = sourmash.load_file_as_index(args.database)
+
+    with sourmash_args.SaveSignaturesToLocation(args.output) as save_sigs:
+        for n, ss in enumerate(idx.signatures()):
+            print(n, len(seen_hashes))
+            mh = ss.minhash.downsample(scaled=args.scaled)
+            new_mh = mh.copy_and_clear()
+
+            hashes = set(mh.hashes)
+            remaining = hashes - seen_hashes
+            new_mh.add_many(remaining)
+            seen_hashes.update(remaining)
+
+            ss.minhash = new_mh
+            save_sigs.add(ss)
 
 
 if __name__ == '__main__':
