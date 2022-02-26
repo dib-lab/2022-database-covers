@@ -41,7 +41,8 @@ def main():
                 seen_hashes.update(remaining)
 
                 if len(hashes) == len(remaining):
-                    print("saving unmodified signature.")
+                    print("saving original (downsampled?) signature.")
+                    ss.minhash = mh
                     save_sigs.add(ss)
                 elif len(remaining) == 0:
                     print("DISCARDING signature.")
