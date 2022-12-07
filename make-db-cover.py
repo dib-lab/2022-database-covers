@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import sys
 import sourmash
-from sourmash import sourmash_args, SourmashSignature
+from sourmash import sourmash_args
 import argparse
 import os.path
 
