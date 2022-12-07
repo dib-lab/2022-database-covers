@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import sys
 import sourmash
-from sourmash import sourmash_args
+from sourmash import sourmash_args, SourmashSignature
 import argparse
 import os.path
 
@@ -39,6 +39,8 @@ def main():
                 hashes = set(mh.hashes)
                 remaining = hashes - seen_hashes
                 seen_hashes.update(remaining)
+
+                ss = ss.to_mutable()
 
                 if len(hashes) == len(remaining):
                     print("saving original (downsampled?) signature.")
