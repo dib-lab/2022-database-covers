@@ -6,31 +6,22 @@ import argparse
 import os.path
 
 
-from sourmash.search import JaccardSearch, SearchType
-
-class MyJaccardSearch(JaccardSearch):
-    def __init__(self, query):
-        JaccardSearch.__init__(self, SearchType.CONTAINMENT)
-        self.query = query
-
-    def collect(self, score, match):
-        if self.query == match:
-            return False
-        return True
-
-
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('databases', nargs='+')
     p.add_argument('--scaled', default=10000, type=int)
+    p.add_argument('-k', '--ksize', default=31, type=int)
     p.add_argument('-o', '--output', required=True)
     args = p.parse_args()
 
     seen_hashes = set()
 
     with sourmash_args.SaveSignaturesToLocation(args.output) as save_sigs:
+        print(f"opening '{args.output} to save.")
         for filename in args.databases:
+            print(F"opening '{filename} for reading...")
             idx = sourmash.load_file_as_index(filename)
+            idx = idx.select(ksize=args.ksize)
 
             for n, ss in enumerate(idx.signatures()):
                 print(f"examining {ss.name[:30]}... from {os.path.basename(filename)} - #{n}, {len(seen_hashes)} total hashes.")
