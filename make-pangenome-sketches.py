@@ -35,7 +35,7 @@ def main():
         db = sourmash_args.load_file_as_index(filename)
         db = db.select(ksize=args.ksize)
         mf = db.manifest
-        print('xxx', len(mf))
+        assert mf, "no matching sketches for given ksize!?"
         for row in mf.rows:
             name = row['name']
             md5sum = row['md5']
