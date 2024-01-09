@@ -27,6 +27,7 @@ def main():
 
     print(f"loading taxonomies from {args.taxonomy_file}")
     taxdb = sourmash.tax.tax_utils.MultiLineageDB.load(args.taxonomy_file)
+    print(f"found {len(taxdb)} identifiers in taxdb.")
 
     revtax_d = {}
     ident_d = {}
@@ -38,7 +39,12 @@ def main():
         mf = db.manifest
         assert mf, "no matching sketches for given ksize!?"
 
-        for ss in db.signatures():
+        # load and merge
+        for n, ss in enumerate(db.signatures()):
+            if n and n % 1000 == 0:
+                print(f'...{n} - loading')
+                if n > 5000:
+                    break
             name = ss.name
             md5sum = ss.md5sum()
 
@@ -53,7 +59,7 @@ def main():
             # pick an ident to represent this set of pangenome sketches
             ident_d[lineage_name] = ident # ok if overwrite...
 
-            # track
+            # track merged sketches
             mh = revtax_d.get(lineage_name)
             if mh is None:
                 mh = ss.minhash.to_mutable()
@@ -61,16 +67,22 @@ def main():
             else:
                 mh += ss.minhash
 
-            print('...', name)
 
+    # save!
     with sourmash_args.SaveSignaturesToLocation(args.output) as save_sigs:
-        for lineage_name, ident in ident_d.items():
+        for n, (lineage_name, ident) in enumerate(ident_d.items()):
+            if n and n % 1000 == 0:
+                print(f'...{n} - saving')
             sig_name = f'{ident} {lineage_name}'
-            mh = revtax_d[lineage_name]
-            ss = sourmash.SourmashSignature(mh, name=sig_name)
-            save_sigs.add(ss)
 
-            print(f'saved: {sig_name}')
+            # retrieve merged MinHash
+            mh = revtax_d[lineage_name]
+
+            # make a signature
+            ss = sourmash.SourmashSignature(mh, name=sig_name)
+
+            # save!
+            save_sigs.add(ss)
 
 
 if __name__ == '__main__':
