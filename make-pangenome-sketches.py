@@ -43,8 +43,6 @@ def main():
         for n, ss in enumerate(db.signatures()):
             if n and n % 1000 == 0:
                 print(f'...{n} - loading')
-                if n > 5000:
-                    break
             name = ss.name
             md5sum = ss.md5sum()
 
