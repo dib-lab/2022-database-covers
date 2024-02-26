@@ -9,7 +9,6 @@ import sourmash
 from sourmash import sourmash_args
 from sourmash.tax import tax_utils
 
-
 def main():
     p = argparse.ArgumentParser()
     p.add_argument(
@@ -24,8 +23,8 @@ def main():
     p.add_argument('--scaled', default=1000, type=int)
     p.add_argument('-k', '--ksize', default=31, type=int)
     p.add_argument('-o', '--output', required=True,
-                    help='Define a filename for the pangenome signatures (.zip preferred). \n'
-                         'A CSV file with the same name will also be generated to contain the lineage rank, genome name, and hash count.')
+                    help='Define a filename for the pangenome signatures (.zip preferred).')
+    p.add_argument('--csv', help='A CSV file generated to contain the lineage rank, genome name, hash count, and genome count.')
     p.add_argument('-r', '--rank', default='species')
     p.add_argument('-a', '--abund', action='store_true', help='Enable abundance tracking of hashes across rank selection.')
     args = p.parse_args()
@@ -39,7 +38,7 @@ def main():
     accum = defaultdict(dict)
     if args.abund:
         counts = {}
-    csv_file = check_csv(args.output)
+    csv_file = check_csv(args.csv)
 
     # Load the database
     for filename in args.sketches:
@@ -48,8 +47,8 @@ def main():
         db = db.select(ksize=args.ksize)
         mf = db.manifest
         assert mf, "no matching sketches for given ksize!?"
-
-        chunk = []
+        if csv_file: chunk = []
+        
         # Work on a single signature at a time across the database
         for n, ss in enumerate(db.signatures()):
             if n and n % 1000 == 0:
@@ -63,9 +62,7 @@ def main():
             lineage_tup = tax_utils.RankLineageInfo(lineage=lineage_tup)
             lineage_pair = lineage_tup.lineage_at_rank(args.rank)
             lineage_name = lineage_pair[-1].name
-
-            # pick an ident to represent this set of pangenome sketches
-            ident_d[lineage_name] = ident 
+            ident_d[lineage_name] = ident # pick an ident to represent this set of pangenome sketches
 
             # Accumulate the count within lineage names if `--abund` in cli
             if args.abund:
@@ -79,7 +76,6 @@ def main():
             mh = revtax_d.get(lineage_name)
             if mh is None:
                 mh = ss.minhash.to_mutable()
-            
                 revtax_d[lineage_name] = mh
             else:
                 mh += ss.minhash
@@ -89,26 +85,28 @@ def main():
             
             ## Add {name, hash_count} to a lineage key then
             ## create a simpler dict for writing the csv
-            accum[lineage_name][name] = accum[lineage_name].get(name, 0) + hash_count
-            chunk.append({'lineage': lineage_name, 'sig_name': name, 'hash_count': hash_count})
+            if csv_file:
+                accum[lineage_name][name] = accum[lineage_name].get(name, 0) + hash_count
+                chunk.append({'lineage': lineage_name, 'sig_name': name, 'hash_count': hash_count, 'genome_count': n})
             
-            if len(chunk) >= 1000: #args.chunk_size?
+            if csv_file and len(chunk) >= 1000: #args.chunk_size?
                 write_chunk(chunk, csv_file) #args.outputfilenameforcsv?
                 accum = defaultdict(dict)
                 chunk = []
-
+            if n == 1005:
+                break
         # Write remaining data
         if chunk:
             write_chunk(chunk, csv_file)
             accum = defaultdict(dict)
             chunk = []
 
-
    # save!
     with sourmash_args.SaveSignaturesToLocation(args.output) as save_sigs:
         for n, (lineage_name, ident) in enumerate(ident_d.items()):
             if n and n % 1000 == 0:
                 print(f'...{n} - saving')
+
             sig_name = f'{ident} {lineage_name}'
 
             # retrieve merged MinHash
@@ -117,7 +115,6 @@ def main():
             # Add abundance to signature if `--abund` in cli
             if args.abund:
                 abund_d = dict(counts[lineage_name])
-                
                 abund_mh = mh.copy_and_clear()
                 abund_mh.track_abundance = True
                 abund_mh.set_abundances(abund_d)
@@ -130,7 +127,7 @@ def main():
 # Chunk function to limit the memory used by the hash_count dict and list
 def write_chunk(chunk, output_file):
     with open(output_file, 'a', newline='') as csvfile:
-        fieldnames = ['lineage', 'sig_name', 'hash_count']
+        fieldnames = ['lineage', 'sig_name', 'hash_count', 'genome_count']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writerows(chunk)
 
