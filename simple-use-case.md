@@ -170,8 +170,8 @@ Look for the section of the script that defines the arguments. For this particul
     args = p.parse_args()
 ```
 
-To exit a text editor
-click```esc``` and type```:qw```
+To exit the `vi` text editor,
+click `esc` and type `:qw`
 
 Titus' command:
 ```
