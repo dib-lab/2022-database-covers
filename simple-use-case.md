@@ -2,7 +2,7 @@
 
 This is a walkthrough on how to use the 2022-database-covers repo for building pangenome databases!
 
-Make sure to fork all the branches from [ctb/2022-database-covers](https://github.com/ctb/2022-database-covers) and create a tmux session that will be for this specific project!
+Make sure to fork all the branches from [dib-lab/2022-database-covers](https://github.com/dib-lab/2022-database-covers) and create a tmux session that will be for this specific project!
 
 ## Clone the repo by a specific branch
 
@@ -10,7 +10,7 @@ The command `git clone` only clones the top-level branch (e.g. `main`, `master`,
 
 To clone a specific branch in a repo, use:
 ```
-git clone -b pangenome git@github.com:ccbaumler/2022-database-covers.git
+git clone -b latest git@github.com:ccbaumler/2022-database-covers.git
 ```
 
 Use the `git branch` command to see the branch you are currently using.
@@ -20,7 +20,7 @@ git branch
 
 Output:
 ```
-* pangenome
+* latest
 ```
 
 If you have already cloned a repo and would like to add a remote branch to your local repository, you can do that as well!
@@ -34,7 +34,7 @@ This `git checkout` command will add the `latest` branch to the local repo. What
 Output:
 ```
 latest
-* pangenome
+* latest
 ```
 
 ## Set up the databases
