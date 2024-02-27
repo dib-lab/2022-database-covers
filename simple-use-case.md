@@ -10,7 +10,7 @@ The command `git clone` only clones the top-level branch (e.g. `main`, `master`,
 
 To clone a specific branch in a repo, use:
 ```
-git clone -b pangenomes git@github.com:ccbaumler/2022-database-covers.git
+git clone -b pangenome git@github.com:ccbaumler/2022-database-covers.git
 ```
 
 Use the `git branch` command to see the branch you are currently using.
@@ -169,6 +169,9 @@ Look for the section of the script that defines the arguments. For this particul
     p.add_argument('-r', '--rank', default='species')
     args = p.parse_args()
 ```
+
+To exit a text editor
+click```esc``` and type```:qw```
 
 Titus' command:
 ```
