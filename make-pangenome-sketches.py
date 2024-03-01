@@ -38,7 +38,8 @@ def main():
     accum = defaultdict(dict)
     if args.abund:
         counts = {}
-    csv_file = check_csv(args.csv)
+    if args.csv:
+        csv_file = check_csv(args.csv)
 
     # Load the database
     for filename in args.sketches:
@@ -48,7 +49,7 @@ def main():
         mf = db.manifest
         assert mf, "no matching sketches for given ksize!?"
 
-        if csv_file: chunk = []
+        if args.csv: chunk = []
 
         # Work on a single signature at a time across the database
         for n, ss in enumerate(db.signatures()):
@@ -83,22 +84,22 @@ def main():
             else:
                 mh += ss.minhash
 
-            # Accumulated counts of hashes in lineage by genome
-            hash_count = len(mh.hashes)
-
             ## Add {name, hash_count} to a lineage key then
             ## create a simpler dict for writing the csv
-            if csv_file:
+            if args.csv:
+                # Accumulated counts of hashes in lineage by genome
+                hash_count = len(mh.hashes)
+
                 accum[lineage_name][name] = accum[lineage_name].get(name, 0) + hash_count
                 chunk.append({'lineage': lineage_name, 'sig_name': name, 'hash_count': hash_count, 'genome_count': n})
 
-            if csv_file and len(chunk) >= 1000: #args.chunk_size?
+            if args.csv and len(chunk) >= 1000: #args.chunk_size?
                 write_chunk(chunk, csv_file) #args.outputfilenameforcsv?
                 accum = defaultdict(dict)
                 chunk = []
 
         # Write remaining data
-        if chunk:
+        if args.csv and len(chunk) > 0:
             write_chunk(chunk, csv_file)
             accum = defaultdict(dict)
             chunk = []
@@ -135,11 +136,13 @@ def write_chunk(chunk, output_file):
         writer.writerows(chunk)
 
 def check_csv(csv_file):
-    count_csv = os.path.splitext(csv_file)[0] + ".csv"
+    if csv_file is None:
+        return
 
     if os.path.exists(count_csv):
         raise argparse.ArgumentTypeError("\n%s already exists" % count_csv)
 
+    count_csv = os.path.splitext(csv_file)[0] + ".csv"
     return count_csv
 
 if __name__ == '__main__':
