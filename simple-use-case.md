@@ -302,3 +302,76 @@ rank family:              4814 distinct taxonomic lineages
 rank genus:               20739 distinct taxonomic lineages
 rank species:             85205 distinct taxonomic lineages
 ```
+
+Comparing species level pangenome with representative genomes of GTDB
+
+Representative Database:
+```
+== This is sourmash version 4.8.5. ==
+== Please cite Brown and Irber (2016), doi:10.21105/joss.00027. ==
+
+** loading from '/group/ctbrowngrp/sourmash-db/gtdb-rs214/gtdb-rs214-reps.k21.zip'
+path filetype: ZipFileLinearIndex
+location: /group/ctbrowngrp/sourmash-db/gtdb-rs214/gtdb-rs214-reps.k21.zip
+is database? yes
+has manifest? yes
+num signatures: 85205
+** examining manifest...
+total hashes: 270637876
+summary of sketches:
+   85205 sketches with DNA, k=21, scaled=1000         270637876 total hashes
+```
+
+Species Database:
+```
+== This is sourmash version 4.8.5. ==
+== Please cite Brown and Irber (2016), doi:10.21105/joss.00027. ==
+
+** loading from 'gtdb-rs214-k21.pangenomes.species.zip'
+path filetype: ZipFileLinearIndex
+location: /home/baumlerc/2022-database-covers/gtdb-rs214-k21.pangenomes.species.zip
+is database? yes
+has manifest? yes
+num signatures: 85205
+** examining manifest...
+total hashes: 326393008
+summary of sketches:
+   85205 sketches with DNA, k=21, scaled=1000         326393008 total hashes
+```
+
+## Explore the impact of database on `sourmash gather`
+
+Download the metadata at [this SRA Run Selector link](https://www.ncbi.nlm.nih.gov/Traces/study/?acc=SRR1976948%2CSRR5650070%2CSRR606249%2CSRR12324253&o=acc_s%3Aa)
+
+I renamed my SraRunTable.txt to mock.txt.
+
+For Farm HPC users:
+
+1. Check if signature files already exist on the Farm.
+```
+for i in $(awk -F',' 'NR >= 2 {print $1}' mock.txt | uniq); do echo [ -e "/group/ctbrowngrp/irber/data/wort-data/wort-sra/sigs/$i.sig" ] && echo "File $i.sig exists in wort" || echo "File $i.sig does not exist in wort" ; done
+```
+
+2. Link those files into the `sigs` directory for ease and minimal disk space use.
+```
+for i in $(awk -F',' 'NR > 1 {print $1}' mock.txt); do ln -s /group/ctbrowngrp/irber/data/wort-data/wort-sra/sigs/$i.sig $(pwd)/sigs/$i.sig ; done
+```
+
+> - Note that each of these bash conditionals were written with `echo` after `do` in the for loop. This output shows the action the for loop will execute before I unleash it on the computer cluster.
+> This:
+> ```
+> for i in $(awk -F',' 'NR > 1 {print $1}' mock.txt); do echo ln -s /group/ctbrowngrp/irber/data/wort-data/wort-sra/sigs/$i.sig $(pwd)/sigs/$i.sig ; done
+> ```
+> Outputs:
+> ```
+> ln -s /group/ctbrowngrp/irber/data/wort-data/wort-sra/sigs/SRR606249.sig /home/baumlerc/2022-database-covers/sigs/SRR606249.sig
+> ln -s /group/ctbrowngrp/irber/data/wort-data/wort-sra/sigs/SRR5650070.sig /home/baumlerc/2022-database-covers/sigs/SRR5650070.sig
+> ln -s /group/ctbrowngrp/irber/data/wort-data/wort-sra/sigs/SRR1976948.sig /home/baumlerc/2022-database-covers/sigs/SRR1976948.sig
+> ln -s /group/ctbrowngrp/irber/data/wort-data/wort-sra/sigs/SRR12324253.sig /home/baumlerc/2022-database-covers/sigs/SRR12324253.sig
+> ```
+
+Running `sourmash prefetch` on mock metagenome signatures
+```
+sourmash prefetch --threshold-bp 3000 -o prefetch/SRR12324253-prefetch.csv -k 21 sigs/SRR12324253.sig gtdb-rs214-k21.pangenomes.species.zip
+```
+[Should threshold be set to 3x scaled as a minimum](https://sourmash.readthedocs.io/en/latest/faq.html#id8)
